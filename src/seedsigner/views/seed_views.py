@@ -1187,7 +1187,7 @@ class SeedBIP85SelectChildIndexView(View):
             )
 
         return Destination(
-            SeedWordsWarningView,
+            SeedWordsBackupTestPromptView,
             view_args=dict(
                 seed_num=self.seed_num,
                 bip85_data=dict(child_index=int(ret), num_words=self.num_words),
@@ -1229,7 +1229,9 @@ class SeedBIP85InvalidChildIndexView(View):
 ****************************************************************************"""
 class SeedWordsBackupTestPromptView(View):
     VERIFY = ButtonOption("Verify")
+    REVIEW = ButtonOption("Review")
     SKIP = ButtonOption("Skip")
+    FINALIZE = ButtonOption("Finalize child")
 
     def __init__(self, seed_num: int, bip85_data: dict = None):
         super().__init__()
@@ -1238,11 +1240,9 @@ class SeedWordsBackupTestPromptView(View):
 
 
     def run(self):
-        button_data = [self.VERIFY, self.SKIP]
-
-        FINALIZE = ("Finalize child")
+        button_data = [self.VERIFY, self.REVIEW, self.SKIP]
         if self.seed_num is not None and self.bip85_data:
-            button_data.append(FINALIZE)
+            button_data.append(self.FINALIZE)
 
         selected_menu_num = seed_screens.SeedWordsBackupTestPromptScreen(
             button_data=button_data,
@@ -1254,13 +1254,19 @@ class SeedWordsBackupTestPromptView(View):
                 view_args=dict(seed_num=self.seed_num, bip85_data=self.bip85_data),
             )
 
+        elif button_data[selected_menu_num] == self.REVIEW:
+            return Destination(
+                SeedWordsWarningView,
+                view_args=dict(seed_num=self.seed_num, bip85_data=self.bip85_data),
+            )
+
         elif button_data[selected_menu_num] == self.SKIP:
             if self.seed_num is not None:
                 return Destination(SeedOptionsView, view_args=dict(seed_num=self.seed_num))
             else:
                 return Destination(SeedFinalizeView)
 
-        elif button_data[selected_menu_num] == FINALIZE:
+        elif button_data[selected_menu_num] == self.FINALIZE:
             parent = self.controller.storage.seeds[self.seed_num]
             child = Seed(parent.get_bip85_child_mnemonic(
                 self.bip85_data["child_index"], self.bip85_data["num_words"]
